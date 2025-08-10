@@ -1,0 +1,9 @@
+*.org text diff
+*.tex text diff
+*.inc text diff
+*.txt text diff
+*.md text diff
+*.c text diff
+*.h text diff
+Makefile text diff
+makefile text diff

@@ -1,0 +1,22 @@
+# Backups
+*~
+
+# executables
+core
+*.o
+
+#general output formats
+*.html
+*.odt
+*.pdf
+
+
+# tex specific generated files
+*.aux
+*.bbl
+*.log
+*.dvi
+*.xcp
+*.bbl
+*.blg
+*.out
