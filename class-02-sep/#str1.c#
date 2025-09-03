@@ -1,0 +1,27 @@
+#include <stdio.h>
+
+typedef int *intpointer;
+typedef
+struct
+{
+  int a;
+  float b;
+}rec;
+main()
+{
+
+  intpointer p;
+ rec x1;
+
+ x1.a=1;
+ x1.b=2.3;
+ 
+ printf("x1:a %d x1:b%.2f", x1.a, x1.b);
+
+}
+
+
+
+
+
+
