@@ -1,3 +1,4 @@
+#define Firstindex 0
 void printarray(int l[],int len);
 int  min(int l[], int len);
 void swap(int l[], int i, int j);
@@ -10,8 +11,8 @@ main()
   int minind = min(l,len);
   
   printarray(l,len);
-  printf("minind:%d", minind);
-  swap(l,0,minind);
+  printf("selection pass 1\n");
+  swap(l,Firstindex,minind);
   
   printarray(l,len);
   
