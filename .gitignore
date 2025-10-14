@@ -8,7 +8,7 @@ core
 #general output formats
 *.html
 *.odt
-*.pdf
+#*.pdf
 
 
 # tex specific generated files
