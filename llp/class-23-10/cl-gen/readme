@@ -1,0 +1,348 @@
+================================================================================
+INLINE ASSEMBLY IN C - WORKSHOP FILES
+================================================================================
+
+This package contains a comprehensive tutorial on inline assembly in C,
+with intentional errors for learning purposes.
+
+================================================================================
+FILE LIST
+================================================================================
+
+WORKING EXAMPLES (These compile successfully):
+----------------------------------------------
+version1_basic_exchange.c          - Basic register operations and XCHG
+version2_input_operands.c          - Separate input/output operands
+version4_intel_pointers.c          - Intel syntax with memory (correct way)
+version5_att_memory.c              - AT&T syntax with memory operands
+
+BROKEN EXAMPLES (These contain intentional errors):
+---------------------------------------------------
+version3_broken_memory.c           - Intel syntax + "m" constraint (FAILS)
+version6_operand_numbering_error.c - Wrong operand numbering (FAILS)
+
+DOCUMENTATION:
+-------------
+README.txt                         - This file
+Inline_Assembly_Workshop.md        - Complete tutorial document
+
+================================================================================
+COMPILATION INSTRUCTIONS
+================================================================================
+
+Working Examples:
+-----------------
+gcc -o version1 version1_basic_exchange.c
+gcc -o version2 version2_input_operands.c
+gcc -o version4 version4_intel_pointers.c
+gcc -o version5 version5_att_memory.c
+
+Broken Examples (for learning):
+--------------------------------
+gcc -o version3 version3_broken_memory.c
+  → Will show: Error: junk `(%rbp)' after expression
+
+gcc -o version6 version6_operand_numbering_error.c
+  → Will show: error: invalid 'asm': operand number out of range
+
+To view generated assembly:
+---------------------------
+gcc -S -masm=intel version1_basic_exchange.c
+  → Creates version1_basic_exchange.s with assembly code
+
+================================================================================
+LEARNING PATH (RECOMMENDED ORDER)
+================================================================================
+
+1. START HERE: version1_basic_exchange.c
+   Learn: Basic inline assembly syntax, register operations
+
+2. NEXT: version2_input_operands.c
+   Learn: Input vs output operands, constraint types
+
+3. UNDERSTAND THE ERROR: version3_broken_memory.c
+   Learn: Why Intel syntax + "m" constraint fails
+   ACTION: Try to compile it and see the error!
+
+4. FIX #1: version4_intel_pointers.c
+   Learn: How to use Intel syntax with memory (using pointers)
+
+5. FIX #2: version5_att_memory.c
+   Learn: Alternative approach using AT&T syntax
+
+6. COMMON MISTAKE: version6_operand_numbering_error.c
+   Learn: Operand numbering rules
+   ACTION: Try to compile, then try to fix it!
+
+7. READ: Inline_Assembly_Workshop.md
+   Complete reference with all concepts explained
+
+================================================================================
+KEY CONCEPTS COVERED
+================================================================================
+
+1. Inline Assembly Syntax
+   - __asm__ __volatile__ usage
+   - Intel vs AT&T syntax
+   - .intel_syntax and .att_syntax directives
+
+2. Operand Constraints
+   - "r"  - Register input
+   - "=r" - Register output (write-only)
+   - "+r" - Register input/output (read-write)
+   - "m"  - Memory operand (AT&T only!)
+   - "=m" - Memory output (AT&T only)
+   - "i"  - Immediate constant
+
+3. Operand Numbering
+   - %0, %1, %2 ... placeholders
+   - Outputs numbered first, inputs continue
+   - Empty output section = inputs start at %0
+
+4. Clobber Lists
+   - Register clobbers: "eax", "ebx", etc.
+   - "memory" - memory contents changed
+   - "cc" - condition codes (flags) changed
+
+5. Memory Access Patterns
+   - Intel syntax: Use pointers with "r" constraint
+   - AT&T syntax: Use "m" constraint directly
+   - Why Intel + "m" fails (GCC limitation)
+
+================================================================================
+THE CRITICAL LESSON
+================================================================================
+
+*** INTEL SYNTAX + "m" CONSTRAINT = COMPILATION ERROR ***
+
+WHY?
+- GCC expands "m" to AT&T format: -8(%rbp)
+- Intel syntax parser can't understand AT&T notation
+- Result: "junk after expression" error
+
+SOLUTION 1 (Intel Syntax):
+  int *ptr = &variable;
+  __asm__ (
+      ".intel_syntax noprefix\n\t"
+      "mov eax, [%0]\n\t"
+      : : "r" (ptr)              ← Use "r" not "m"!
+  );
+
+SOLUTION 2 (AT&T Syntax):
+  __asm__ (
+      "movl %0, %%eax\n\t"
+      : : "m" (variable)         ← "m" works in AT&T
+  );
+
+================================================================================
+QUICK REFERENCE
+================================================================================
+
+CONSTRAINT CHEAT SHEET:
+----------------------
+"r"   - Any register, read-only
+"=r"  - Any register, write-only
+"+r"  - Any register, read-write
+"m"   - Memory location (AT&T syntax only!)
+"=m"  - Memory output (AT&T syntax only!)
+"+m"  - Memory read-write (AT&T syntax only!)
+"i"   - Immediate constant value
+
+INTEL vs AT&T SYNTAX:
+--------------------
+Operation    | Intel              | AT&T
+-------------|--------------------|-----------------------
+Move         | mov eax, ebx       | movl %ebx, %eax
+Add          | add eax, 5         | addl $5, %eax
+Memory       | mov eax, [rsi]     | movl (%rsi), %eax
+Offset       | mov eax, [rsi+4]   | movl 4(%rsi), %eax
+
+CLOBBER LIST EXAMPLES:
+---------------------
+: "eax"           - EAX register modified
+: "eax", "ebx"    - Both EAX and EBX modified
+: "memory"        - Memory contents changed
+: "cc"            - Condition codes changed
+: "eax", "memory" - Both EAX and memory modified
+
+================================================================================
+COMMON ERRORS AND SOLUTIONS
+================================================================================
+
+ERROR 1: "operand number out of range"
+--------------------------------------
+CAUSE: Wrong operand numbering
+EXAMPLE: Using %1 when only %0 exists
+
+FIX: Count operands correctly
+     : "=r" (out1), "=r" (out2)  ← %0, %1
+     : "r" (in1), "r" (in2)      ← %2, %3
+
+ERROR 2: "junk `(%rbp)' after expression"
+-----------------------------------------
+CAUSE: Using "m" constraint with Intel syntax
+EXAMPLE: 
+     ".intel_syntax noprefix\n\t"
+     "mov eax, %0\n\t"
+     : : "m" (variable)           ← Problem!
+
+FIX: Use pointer with "r" constraint
+     int *ptr = &variable;
+     "mov eax, [%0]\n\t"
+     : : "r" (ptr)                ← Solution!
+
+ERROR 3: Undefined behavior / wrong results
+-------------------------------------------
+CAUSE: Missing clobber list
+EXAMPLE: Modifying memory without "memory" clobber
+
+FIX: Always specify what you modify
+     : "eax", "memory"            ← Tell compiler!
+
+ERROR 4: "invalid 'asm': operand is read-only"
+----------------------------------------------
+CAUSE: Using "r" (read-only) for output
+EXAMPLE:
+     "mov %0, eax\n\t"
+     : "r" (result)               ← Should be "=r"
+
+FIX: Use correct constraint
+     : "=r" (result)              ← Write-only output
+
+================================================================================
+PRACTICE EXERCISES
+================================================================================
+
+Exercise 1: Fix version3_broken_memory.c
+-----------------------------------------
+TASK: Make it compile using the pointer technique
+HINT: Look at version4_intel_pointers.c for the pattern
+
+Exercise 2: Fix version6_operand_numbering_error.c
+--------------------------------------------------
+TASK: Correct the operand numbers
+HINT: Count from %0 when output section is empty
+
+Exercise 3: Convert Intel to AT&T
+----------------------------------
+TASK: Take version1_basic_exchange.c and rewrite using AT&T syntax
+HINT: Remember source comes first, use %% for registers
+
+Exercise 4: Write Your Own
+---------------------------
+TASK: Create a function that:
+      - Takes two integers
+      - Returns their sum using inline assembly
+      - Uses Intel syntax with proper constraints
+
+Exercise 5: Array Operations
+-----------------------------
+TASK: Write inline assembly to:
+      - Find maximum value in an array of 5 integers
+      - Use a loop in assembly
+      - Return the result to C
+
+Exercise 6: Bitwise Operations
+------------------------------
+TASK: Implement XOR swap without using XCHG instruction
+HINT: a ^= b; b ^= a; a ^= b;
+
+================================================================================
+DEBUGGING TIPS
+================================================================================
+
+1. View Generated Assembly:
+   gcc -S -masm=intel yourfile.c
+   Look at yourfile.s to see what was generated
+
+2. Use -Wall for Warnings:
+   gcc -Wall -o program yourfile.c
+
+3. Check Operand Count:
+   Add comments to mark each operand:
+   : "=r" (out1),    // %0
+     "=r" (out2)     // %1
+   : "r" (in1),      // %2
+     "r" (in2)       // %3
+
+4. Test Incrementally:
+   Start with simple register operations
+   Add complexity step by step
+
+5. Use GDB:
+   gcc -g -o program yourfile.c
+   gdb program
+   (gdb) disassemble main
+
+6. Understand the Error:
+   Read error messages carefully
+   Line numbers point to the __asm__ block start
+   Look for "junk", "out of range", "read-only" keywords
+
+================================================================================
+ADDITIONAL RESOURCES
+================================================================================
+
+GCC Inline Assembly Documentation:
+https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html
+
+Intel x86 Instruction Reference:
+https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
+
+AT&T vs Intel Syntax Guide:
+Search for "AT&T assembly syntax" for detailed comparisons
+
+================================================================================
+WORKSHOP OBJECTIVES
+================================================================================
+
+By the end of this workshop, you should be able to:
+
+✓ Write basic inline assembly in C
+✓ Understand the difference between Intel and AT&T syntax
+✓ Use register constraints correctly
+✓ Know when and how to use memory operands
+✓ Avoid common pitfalls (Intel + "m", operand numbering)
+✓ Debug inline assembly compilation errors
+✓ Choose the right approach for your use case
+✓ Read and understand existing inline assembly code
+
+================================================================================
+NOTES FOR INSTRUCTORS
+================================================================================
+
+This package is designed for hands-on learning. Recommended approach:
+
+1. Start with working examples (version1, version2)
+2. Have students compile and run them
+3. Introduce broken examples (version3, version6)
+4. Let students see and understand the errors
+5. Show the fixes (version4, version5)
+6. Assign practice exercises
+7. Review the complete workshop document
+
+The broken examples are intentional teaching tools. Students learn more
+from understanding WHY something fails than just seeing working code.
+
+Key teaching points:
+- Inline assembly is powerful but tricky
+- GCC has limitations (Intel + "m" incompatibility)
+- Constraints and clobbers are critical for correctness
+- Multiple solutions exist for the same problem
+
+================================================================================
+VERSION INFORMATION
+================================================================================
+
+Workshop Version: 1.0
+Date: 2024
+Compiler: GCC (tested with GCC 9.x and later)
+Architecture: x86-64 (most examples work on x86-32 with minor changes)
+
+For 32-bit compilation:
+gcc -m32 -o program program.c
+
+
+Happy learning!
+
+END OF README
