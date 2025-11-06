@@ -1,3 +1,5 @@
+;;;  Build with nasm -f elf64 -F dwarf itoa.asm -o itoa.o
+;;; ld itoa.o -o itoa
 section .data
     number dq 12345       ; Your number
     buffer times 16 db 0
