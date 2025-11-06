@@ -1,0 +1,3 @@
+$nasm -f elf64 hellotocfromasm.asm -o hellotocfromasm.o
+$ gcc -c hellofromasm.c hellofromasm.o 
+$ gcc  hellofromasm.o hellotocfromasm.o
