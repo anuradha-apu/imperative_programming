@@ -1,0 +1,3 @@
+$nasm -f elf64 -F dwarf write1.asm -o write1.o
+$ ld write1.o
+
