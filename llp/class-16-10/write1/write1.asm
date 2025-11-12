@@ -1,5 +1,5 @@
 ; This is a hello world program in assembly.
-
+;;; [format elf64]
 global _start       ; this makes _start known externally
 
 section .text       ; section of our program that holds instructions
