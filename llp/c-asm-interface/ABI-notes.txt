@@ -1,0 +1,40 @@
+#+TITLE: Why ABIs
+* Intro
+When we write a program in C we may see eg. a function definition and a call
+#+begin_src C
+  int foo(int x, int y)
+    {
+      ...
+    }
+#+end_src
+Along with a corresponding call
+#+begin_src C
+  foo(3,4);
+#+end_src
+
+In assembly the call in assembly (intel 32) would become this:
+Note the reverse order
+#+begin_src asm
+  push 4
+  push 3
+  call foo
+  add esp 8  ;; to clean up after 2x4byte pushes
+#+end_src
+whereas in intel 64 (normally called AMD64) it would be
+#+begin_src asm
+  mov rdi, 3 ;; you may see edi/esi
+  mov rsi, 4
+  call foo	
+#+end_src
+
+So clearly, if =foo= is written in assembly, it needs to be written aware of whether we are running in 32 bit or 64 bit mode.
+
+This question — are arguments on stack or in =RDI=, =RSI=... — and a bunch of others *are called ABI (Application Binary Interface)*
+
+In order to write C-asm linkage you need to know the machine ABI for the machine you are running on
+
+These notes are the beginners guide to the C ABI on gcc-Linux-64 with a little on gcc-linux-32.
+* Bookkeeping :noexport:
+# Local Variables:
+# mode: org
+# End:
