@@ -34,6 +34,116 @@ This question — are arguments on stack or in =RDI=, =RSI=... — and a bunch o
 In order to write C-asm linkage you need to know the machine ABI for the machine you are running on
 
 These notes are the beginners guide to the C ABI on gcc-Linux-64 with a little on gcc-linux-32.
+* Basic Structure of Executable Image
+* The Stack
+
+The stack is one of the central runtime data structures of the C execution model.
+For each function call, it holds:
+
+1. **Local variables**
+2. **The return address** (pushed automatically by =call=)
+3. **Saved registers** (“spill slots” and callee-saved registers)
+4. **Function arguments** beyond what can fit in registers (on 64-bit, args ≥ 7)
+
+Intel processors implement a **downward-growing stack**, meaning that =push=, =call=, and explicit stack allocation (=sub rsp, N=) all **decrement** the stack pointer.
+
+The register =SP/ESP/RSP= always points to the **current top** of the stack and changes frequently.
+Because this pointer moves during:
+
+- pushing/popping registers
+- allocating local space
+- calling other functions
+
+…it is not convenient to use it as a stable base for addressing locals.
+
+Therefore, many ABIs use a **frame pointer**, =BP/EBP/RBP=.
+The frame pointer remains fixed throughout the lifetime of a function call and provides a stable reference point for:
+
+- function arguments
+- saved registers
+- local variables
+- stack frame layout
+
+gcc can be made to omit or not the frame pointer (=-fomit-frame-pointer= or =-fno-omit-frame-pointer=)
+
+** 32 bit stack
+#+begin_src text
+             Higher Addresses
+             ───────────────────>
+
+      |  Caller’s locals / spills        |
+      |----------------------------------|
+      |  Function arguments (right→left) |
+      |----------------------------------|
+      |  Return Address (pushed by CALL) |  ← ESP on function entry
+      |----------------------------------|
+      |  Saved EBP (push ebp)            |  ← EBP after 'mov ebp, esp'
+      |----------------------------------|
+      |  Callee’s locals / spills        |
+      |  (allocated via 'sub esp, N')    |
+      |                                  |
+      v  Lower Addresses
+#+end_src
+
+** 64 bit stack
+#+begin_src text
+               Higher Addresses
+               ─────────────────────>
+
+        |  Caller’s locals / spills           |
+        |-------------------------------------|
+        |  Extra function arguments (≥ 7th)    |
+        |-------------------------------------|
+        |  Return Address (CALL pushes RIP)    | ← RSP on entry
+        |-------------------------------------|
+        |  Saved RBP (if using a frame ptr)    | ← RBP after 'mov rbp, rsp'
+        |-------------------------------------|
+        |  Callee’s locals / spills            |
+        |  (allocated via 'sub rsp, N')        |
+        |-------------------------------------|
+        |              ...                     |
+        |-------------------------------------|
+        |  128-byte Red Zone (scratch space)   |
+        |  [RSP-128 .. RSP-1]                  |
+        v  Lower Addresses
+#+end_src
+** Note on Red Zone
+AMD64 has a new arrangement — the 'Red Zone'.
+A 128-byte region below (at lower addresses than) RSP is reserved for the callee’s use:
+#+begin_src text
+        high addresses
+   -------------------------
+   |     caller stack      |
+   |------------------------ 
+   |   return address (RIP) |  ← RSP at function entry
+   |------------------------
+   |   128-byte red zone    |
+   |    (private to callee) |
+   |------------------------
+        lower addresses
+#+end_src
+* gcc options
+** Architecture Mode
+-m32          produce 32-bit code
+-m64          produce 64-bit code
+-march=...    target CPU micro-architecture
+-mtune=...
+** Stack Frame
+-fno-omit-frame-pointer
+-fomit-frame-pointer
+** PIC/PIE
+This is by default on in modern gcc; but makes generated code more unreadable
+-fPIC
+-fPIE
+-pie
+** Also generates some messy stuff at function start and exit
+-fstack-protector
+-fstack-protector-all
+-fstack-protector-strong
+
+
+* nasm options
+
 * Bookkeeping :noexport:
 # Local Variables:
 # mode: org

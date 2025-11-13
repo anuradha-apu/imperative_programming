@@ -1,0 +1,6 @@
+Legend for Anuradha classes
+
+class-30-10  using gdb with various addressing modes explore
+class-16-10  c calling asm without args; asm calling c with args no main
+class 23-10  inline assembly refinements
+class-31-10  crt with n without, syscall, int 80

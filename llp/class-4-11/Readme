@@ -1,0 +1,2 @@
+nasm -f elf64 -F dwarf itoa.asm -o itoa.o
+ld itoa.o -o itoa
